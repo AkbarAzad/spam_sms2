@@ -1,0 +1,24 @@
+install.packages(c("ggplot2", "e1071","caret","quanteda",
+                   "irlba","randomForest"))
+spam.raw <- read.csv("spam.csv", stringsAsFactors = FALSE)
+View(spam.raw)
+
+spam.raw <- spam.raw[,1:2]
+names(spam.raw) <- c("label", "text")
+
+length(which(!complete.cases(spam.raw)))
+
+spam.raw$label <- as.factor(spam.raw$label)
+
+prop.table(table(spam.raw$label))
+
+spam.raw$text_length <- nchar(spam.raw$text)
+summary(spam.raw$text_length)
+
+library(ggplot2)
+
+ggplot(spam.raw, aes(x=text_length, fill=label)) + 
+  theme_bw() +
+  geom_histogram(binwidth=5) +
+  labs(y="Text Count", x = "Length of text",
+       title="Distribution of Text lengths with Class labels")
