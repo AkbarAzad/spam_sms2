@@ -22,3 +22,54 @@ ggplot(spam.raw, aes(x=text_length, fill=label)) +
   geom_histogram(binwidth=5) +
   labs(y="Text Count", x = "Length of text",
        title="Distribution of Text lengths with Class labels")
+
+library(caret)
+help(package="caret")
+
+set.seed(32984)
+indexes <- createDataPartition(spam.raw$label, times = 1,
+                               p = 0.7, list = FALSE)
+
+train <- spam.raw[indexes,]
+test <- spam.raw[-indexes,]
+
+prop.table(table(train$label))
+prop.table(table(test$label))
+
+train$text[21]
+
+train$text[38]
+
+train$text[357]
+
+library("quanteda")
+help(package="quanteda")
+
+?tokens
+
+train.tokens <- tokens(train$text, what="word",
+                       remove_numbers = TRUE, 
+                       remove_punct = TRUE,
+                       remove_symbols = TRUE,
+                       remove_hyphens = TRUE)
+
+train.tokens[[357]]
+train.tokens[38]
+
+train.tokens <- tokens_tolower(train.tokens)
+train.tokens[[357]]
+
+train.tokens <- tokens_select(train.tokens, stopwords(),
+                              selection = "remove")
+train.tokens[[357]]
+
+train.tokens <- tokens_wordstem(train.tokens, language = "english")
+train.tokens[[357]]
+
+train.tokens.dfm <- dfm(train.tokens, tolower=FALSE)
+
+train.tokens.matrix <- as.matrix(train.tokens.dfm)
+View(train.tokens.matrix[1:20, 1:100])
+dim(train.tokens.matrix)
+
+colnames(train.tokens.matrix)[1:50]
