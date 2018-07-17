@@ -73,3 +73,87 @@ View(train.tokens.matrix[1:20, 1:100])
 dim(train.tokens.matrix)
 
 colnames(train.tokens.matrix)[1:50]
+
+install.packages("tidyverse")
+library(tidyverse)
+
+train.tokens.dfm2 <- convert(train.tokens.dfm,to =c("data.frame"),docvars = NULL)
+train.tokens.df <- cbind(Label = train$label, train.tokens.dfm2)
+
+names(train.tokens.df) <- make.names(names(train.tokens.df))
+
+names(train.tokens.df)[c(146, 148, 235, 238)]
+
+library(caret)
+set.seed(48743)
+cv.folds <- createMultiFolds(train$label, k=10,times=3)
+
+cv.cntrl <- trainControl(method="repeatedcv",number=10,
+                         repeats=3,
+                         index=cv.folds)
+
+install.packages("doSNOW")
+library(doSNOW)
+
+start.time <- Sys.time()
+
+cl <- makeCluster(1, type="SOCK")
+registerDoSNOW(cl)
+
+
+rpart.cv.1 <- train(Label ~., data=train.tokens.df,
+                    method="rpart",
+                    trControl=cv.cntrl,
+                    tuneLength=7)
+
+
+total.time <- Sys.time() - start.time
+total.time
+# time taken is 55 minutes.
+
+rpart.cv.1
+# cp=0.009560229
+# accuracy=0.9515496
+# kappa=0.7667952
+
+term.frequency <- function(row){
+  row/sum(row)
+}
+
+inverse.doc.freq <- function(col){
+  corpus.size <- length(col)
+  doc.count <- length(which(col>0))
+  
+  log10(corpus.size/doc.count)
+}
+
+tf.idf <- function(tf, idf){
+  tf*idf
+}
+
+train.tokens.df <- apply(train.tokens.matrix,1,term.frequency)
+dim(train.tokens.df)
+View(train.tokens.df[1:20,1:100])
+
+train.tokens.idf <- apply(train.tokens.matrix,2,inverse.doc.freq)
+str(train.tokens.idf)
+
+train.tokens.tfidf <- apply(train.tokens.df,2,tf.idf, idf=train.tokens.idf)
+dim(train.tokens.tfidf)
+View(train.tokens.tfidf[1:25,1:25])
+
+train.tokens.tfidf <- t(train.tokens.tfidf)
+dim(train.tokens.tfidf)
+View(train.tokens.tfidf[1:25,1:25])
+
+incomplete.cases <- which(!complete.cases(train.tokens.tfidf))
+train$text[incomplete.cases]
+
+train.tokens.tfidf[incomplete.cases,] <- rep(0.0,
+                                             ncol(train.tokens.tfidf))
+dim(train.tokens.tfidf)
+sum(which(!complete.cases(train.tokens.idf)))
+
+train.tokens.tfidf.df <- cbind(Label=train$label,
+                               data.frame(train.tokens.tfidf))
+names(train.tokens.tfidf.df) <- make.names(names(train.tokens.tfidf.df))
